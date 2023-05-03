@@ -6,7 +6,7 @@ library(patchwork)
 source('functions.R')
 
 st <- states()  %>% 
-  select(NAME)
+  select(STUSPS, NAME)
 
 xy <- data.frame(
   x = c(-100.72, -100.67, -124.12, -125.31),
@@ -17,8 +17,10 @@ xy <- data.frame(
   st_cast('POLYGON') %>% 
   st_as_sf()
 
-ak <- filter(st, NAME == 'Alaska') %>% select(NAME)
-il <- filter(us_states, NAME == 'Illinois') %>% select(NAME)
+ak <- filter(st, NAME == 'Alaska')
+il <- filter(us_states, NAME == 'Illinois') %>%
+  select(NAME) %>% 
+  mutate(STUSPS = 'IL')
 
 st_west <- st_crop(st, xy) %>% 
   bind_rows(., il) %>% 
@@ -47,9 +49,10 @@ ak <- filter(st_west, NAME == 'Alaska') %>%
   st_transform(3338)
 il <- filter(st_west, NAME == 'Illinois')
 
-ak <- state_splitter(ak, pieces = 4)
+ak <- state_splitter(ak, pieces = 4) 
 il <- state_splitter(il, pieces = 3)
 
+rm(west_l, state_splitter)
 
 # now if the state has less than three sections reduce 
 
@@ -59,12 +62,12 @@ websites <- data.frame(
     rep('Burke Herbarium Image Collection', 4), 
     rep('Montana Natural Heritage Program', 6),
     rep('Calflora-Calphotos', 3), 
-    rep('SW CO Wildflowers', 4),
-    rep('SEINet', 5),
-    rep('American SW', 2),
+    rep('Southwest CO Wildflowers', 4),
+    rep('SEINet', 7),
+    rep('American Southwest', 2),
     'Illinois Wildflowers', 'Illinois Plants', 'Phytokeys',
     'Alaska Wildflowers',
-    rep('US Wildflowers', 2)
+    rep('US Wildflowers', 3)
   ),
   state = c(
     'OR', 'MT', 'ID', 'CA', 'NV', 'CO', 'WY', 'AK', 'UT', # OFIP
@@ -72,18 +75,41 @@ websites <- data.frame(
     'MT', 'ID', 'WY', 'AK', 'ND', 'SD', # MTNHP
     'CA', 'NV', 'AZ', # calflora
     'CO', 'UT', 'WY', 'NM', # sw co wildflowers
-    'NV', 'CA', 'UT', 'AZ', 'TX', # SEINet
+    'NM', 'NV', 'CA', 'UT', 'AZ', 'TX', 'CO', # SEINet
     'AZ', 'NM', # american southwest
     'IL', 'IL', 'IL',
     'AK',
-    'NE', 'KA'
+    'NE', 'KS', 'OK'
   )
 ) %>% 
-  arrange(state)
+  arrange(state) %>% 
+  group_by(state) %>% 
+  mutate(TEMPGRP = LETTERS[1:n()])
 
 grps_b_state <- websites %>% 
   count(state)
 
+split_states <- left_join(split_states, grps_b_state, by = c('STUSPS' =  'state')) %>% 
+  mutate(TEMPGRP = if_else(n == 1,  'A', TEMPGRP)) %>% 
+  select(-n) %>% 
+  left_join(., websites, by = c('STUSPS' = 'state',  'TEMPGRP')) %>% 
+  group_by(STUSPS, TEMPGRP) %>% 
+  st_make_valid() %>% 
+  mutate(geometry = st_union(geometry)) %>% 
+  distinct()
+
+il <- left_join(il, websites, by = c('STUSPS' = 'state',  'TEMPGRP')) %>% 
+  st_make_valid() %>% 
+  group_by(STUSPS, TEMPGRP) %>% 
+  mutate(geometry = st_union(geometry)) %>% 
+  distinct(STUSPS, TEMPGRP, .keep_all = T)
+ak <- left_join(ak, websites, by = c('STUSPS' = 'state',  'TEMPGRP')) %>% 
+  st_make_valid() %>% 
+  group_by(STUSPS, TEMPGRP) %>% 
+  mutate(geometry = st_union(geometry)) %>% 
+  distinct(STUSPS, TEMPGRP, .keep_all = T)
+
+rm(grps_b_state, websites, west, st_west)
 
 ################################################################################
 #######                        COLOR PALETTES                           ########
@@ -91,10 +117,9 @@ grps_b_state <- websites %>%
 
 
 web <- c('Oregon Flora Image Project', 'Burke Herbarium Image Collection',
-'Montana Natural Heritage Program', 'Calflora-Calphotos', 'SW CO Wildflowers', 
-'SEINet', 'American SW', 'Illinois Wildflowers', 'Illinois Plants', 'Phytokeys',
+'Montana Natural Heritage Program', 'Calflora-Calphotos', 'Southwest CO Wildflowers', 
+'SEINet', 'American Southwest', 'Illinois Wildflowers', 'Illinois Plants', 'Phytokeys',
 'Alaska Wildflowers', 'US Wildflowers')
-
 
 cols1 <- setNames(
   c('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462',
@@ -102,29 +127,26 @@ cols1 <- setNames(
              web
 )
 
+rm(web)
 
 ################################################################################
 ######                           ALASKA PLOT                            ########
 ################################################################################
 
-ak <- filter(con, state == 'Alaska')
 ak32 <- st_transform(ak, 3338)
 
 akp <- ggplot() +
-  geom_sf(data = ak32, aes(fill = consortium)) +
+  geom_sf(data = ak32, aes(fill = website)) +
   scale_fill_manual(values = cols1) +
   theme_void() + 
   theme(legend.position = 'none')
-
 
 ################################################################################
 ######                         ILLINOIS PLOT                            ########
 ################################################################################
 
-il <- filter(con, state == 'Illinois')
-
-il <- ggplot() +
-  geom_sf(data = il, aes(fill = consortium)) +
+ilp <- ggplot() +
+  geom_sf(data = il, aes(fill = website)) +
   scale_fill_manual(values = cols1) +
   theme_void() +
   theme(legend.position = 'none')
@@ -133,20 +155,18 @@ il <- ggplot() +
 #########                    WESTERN PLOTS                              ########
 ################################################################################
 
-west_sub <- filter(con, ! state %in% c('Alaska', 'Illinois'))
-
 west <- ggplot() +
-  geom_sf(data = west_sub, aes(fill = consortium)) + 
+  geom_sf(data = split_states, aes(fill = website)) + 
   scale_fill_manual(values = cols1) +
   theme_void() +
   theme(legend.position = 'none')
 
-west
-
 leg <- ggpubr::get_legend(
   ggplot() + 
-    geom_sf(data = con, aes(fill = consortium)) + 
-    scale_fill_manual('Herbaria Consortium', values = cols1) +
+    geom_sf(data = split_states, aes(fill = website)) + 
+    geom_sf(data = il, aes(fill = website)) + 
+    geom_sf(data = ak, aes(fill = website)) + 
+    scale_fill_manual('Plant Photo Websites', values = cols1) +
     theme(legend.title.align = 0.5, 
           legend.spacing.x = unit(1, 'cm'),
           legend.spacing.y = unit(0.4, 'cm')) + 
@@ -154,7 +174,11 @@ leg <- ggpubr::get_legend(
 )
 
 
-(il | akp | west) /
+
+(ilp | akp | west) /
   leg
-ggsave('../results/ConsortiumByRegion.png', device = 'png', dpi = 150, units = "px",
+ggsave('../results/WebsitesByState.png', device = 'png', dpi = 150, units = "px",
        width = 1920, height = 1080)
+
+
+rm(ilp, akp, west, leg, cols1, ak32, il, ak, split_states)

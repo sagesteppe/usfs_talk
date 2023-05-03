@@ -23,7 +23,7 @@ state_splitter <- function(x, pieces){
   t_area <- st_intersection(t_area, x)
   
   n_cells <- round( nrow(t_area) / pieces, 0)
-  grpL <- c( rep(n_cells, (pieces - 1)), nrow(t_area) - (n_cells * 2) ) 
+  grpL <- c( rep(n_cells, (pieces - 1)), nrow(t_area) - (n_cells * (pieces - 1)) ) 
   
   t_area <- t_area %>% 
     dplyr::mutate(TEMPGRP = rep( LETTERS[1:pieces], grpL), .before = geometry) %>% 
