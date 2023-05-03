@@ -1,0 +1,109 @@
+---
+title: "flora status table"
+author: "steppe"
+date: "2023-05-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(dpi = 300) 
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+```
+
+```{r}
+library(tidyverse)
+library(kableExtra)
+```
+
+```{r}
+admin_floras <- data.frame(
+  flora = c(
+    'Jepson Manual 2nd', 'A Colorado Flora 2nd', 'Flora Neomexicana',
+    'Manual of Montana Vascular Plants 2nd', 'Vascular Plants of Wyoming', 'A Utah Flora 3rd', 
+    'Vascular Flora of Illinois 4th', 'Flora of Oregon', 'Arizona Flora 2nd', 'Flora of Alaska'
+  ),
+  authors = c(
+    'Baldwin, Goldman, Keil, Patterson, Patterson, Wilken', 'Ackerfield', 'Allred', 
+    'Lesica', 'Dorn', 'Welsh Atwood, Higgins, Goodrich', 
+    'Mohlenbrock',  'Meyers, Jaster, Mitchell, Hardison, Harvey', 'Kearney, Peebles', 'Anderson, Welsh'
+  ),
+  status = c(
+    'Current - Online', 'Current', 'Current', 
+    'Current', 'Aging', 'Aging', 
+    'Current', 'Current - Not complete', 'Aged - Not complete', 'Aged'
+  )
+) 
+
+
+regional_floras <- data.frame(
+  flora = c(
+    'Intermountain Flora', 'Flora of the Pacific Northwest', 'Flora of the Great Plains', 
+    'Uinta Flora', 'Flora of the Four Corners Region', 'Flora of Steens Mountain', 
+    'Flora of the Chicago Region'
+  ),
+  authors = c(
+    'Cronquist, Reveal, Holmgrens, Barneby', 'Hitchcock, Cronquist', 'Many',
+    'Goodrich, Huber', 'Heil, Kane, Reeves, Clifford', 'Mansfield', 
+    'Wilhelm, Rericha'
+  ), 
+  status = c(
+    'Aged-Current', 'Current', 'Aging', 
+    'Current', 'Current', 'Current', 
+    'Current'
+  )
+)
+
+floras <- bind_rows(admin_floras, regional_floras) %>% 
+  arrange(flora)
+
+cols1 <- setNames(
+  c('#a6cee3','#1f78b4','#b2df8a',
+           '#33a02c','#fb9a99','#e31a1c',
+           '#fdbf6f','#ff7f00','#cab2d6',
+           '#6a3d9a','#ffff99','#b15928'),
+ c('Flora Neomexicana', 'Jepson Manual 2nd', 'Manual of Montana Vascular Plants 2nd', 
+          'Flora of the Pacific Northwest', 'A Utah Flora 3rd', 'Vascular Plants of Wyoming', 
+          'Intermountain Flora', 'A Colorado Flora 2nd', 'Flora of Oregon',
+          'Flora of Steens Mountain', 'Flora of the Great Plains', 'Arizona Flora 2nd')
+)
+
+cols2 <- setNames(
+  c('#434371', '#79AEA3', '#484041'), 
+  c('Flora of the Chicago Region', 'Vascular Flora of Illinois 4th', 'Flora of Alaska')
+)
+
+cols3 <- setNames(
+  c('#CB8589', '#86836D'), 
+  c('Uinta Flora', 'Flora of the Four Corners Region')
+)
+
+f_cols <- c(cols1, cols2, cols3)
+
+rm(cols1, cols2, cols3, admin_floras, regional_floras)
+```
+
+```{r}
+
+stat_col <- floras %>% 
+  mutate(Color = case_when(
+    status == 'Current - Online' ~ 'darkgreen', 
+    status ==  'Current' ~ 'green', 
+    status %in% c('Aged', 'Aged - Not complete') ~ 'firebrick',
+    status == 'Aged - Current' ~ 'darkorange', 
+    .default =  'orange'
+  )) %>% 
+  pull(Color)
+
+f_cols <- f_cols[order(names(f_cols), floras$flora)]
+
+floras %>% 
+  kbl(align = 'c', col.names = c('Flora', 'Authors', 'Status')) %>% 
+  kable_paper(full_width = F) %>% 
+  
+  column_spec(1, background = f_cols, color = 'white') %>% 
+  column_spec(3, background = stat_col, color = 'white')
+
+```
+

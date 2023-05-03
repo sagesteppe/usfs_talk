@@ -131,6 +131,8 @@ cols3 <- setNames(
 
 f_cols <- c(cols1, cols2, cols3)
 
+rm(cols1, cols2, cols3)
+
 ################################################################################
 ######                           ALASKA PLOT                            ########
 ################################################################################
@@ -138,7 +140,7 @@ f_cols <- c(cols1, cols2, cols3)
 ak <- filter(admin_floras, states == 'Alaska')
 ak32 <- st_transform(ak, 3338)
 
-ggplot() +
+akp <- ggplot() +
   geom_sf(data = ak32, aes(fill = flora)) +
   scale_fill_manual(values = f_cols) +
   theme_void() + 
@@ -151,7 +153,7 @@ ggplot() +
 chi <- filter(regional_floras, regions == 'Chicago')
 il <- filter(admin_floras, states == 'Illinois')
 
-ggplot() +
+il <- ggplot() +
   geom_sf(data = il, aes(fill = flora)) +
   geom_sf(data = chi, aes(fill = flora)) + 
   scale_fill_manual(values = f_cols) +
@@ -167,22 +169,55 @@ reg2 <- filter(regional_floras, regions %in% c('Great Basin', 'Pacific Northwest
 reg3 <- filter(regional_floras, regions %in% c('Steens Mountain', 'Four Corners', 'Uinta'))
 ad_sub <- filter(admin_floras, ! states %in% c('Illinois', 'Alaska'))
 
-ggplot() +
+west <- ggplot() +
   geom_sf(data = reg1, aes(fill = flora)) + 
   geom_sf(data = ad_sub, aes(fill = flora)) +
   geom_sf(data = reg2, aes(fill = flora)) + 
   geom_sf(data = reg3, aes(fill = flora)) + 
   scale_fill_manual(values = f_cols) +
-  theme_void() #+
-#  theme(legend.position = 'none')
+  theme_void() +
+  theme(legend.position = 'none')
 
+rm(reg1, reg2, reg3, ad_sub)
 
 leg <- ggpubr::get_legend(
   ggplot() + 
   geom_sf(data = regional_floras, aes(fill = flora)) + 
   geom_sf(data = admin_floras, aes(fill = flora)) + 
   scale_fill_manual('Flora', values = f_cols) +
-  theme(legend.title.align = 0.5)
+  theme(legend.title.align = 0.5) + 
+  guides(fill=guide_legend(ncol=3))
 )
 
-plot(leg)
+library(patchwork)
+
+cowplot::plot_grid(akp, west, il, labels = "Floras by region", nrow = 1, 
+                   rel_widths = c(1, 0.7, 0.4))
+
+
+(il | akp | west) /
+    leg
+
+# rm(il, akp, west, leg)
+################################################################################
+#######                        FLORA STATUS TABLE                       ########      
+################################################################################
+
+af <- admin_floras %>% 
+  select(flora, authors, status) %>% 
+  st_drop_geometry()
+
+rf <- regional_floras %>% 
+  select(flora, authors, status) %>% 
+  st_drop_geometry()
+
+f <- bind_rows(af, rf)
+                   
+mtcars[1:8, 1:8] %>%
+  kbl() %>%
+  kable_paper(full_width = F) %>%
+  column_spec(2, color = spec_color(mtcars$mpg[1:8]),
+              link = "https://haozhu233.github.io/kableExtra/") %>%
+  column_spec(6, color = "white",
+              background = spec_color(mtcars$drat[1:8], end = 0.7),
+              popover = paste("am:", mtcars$am[1:8]))
