@@ -2,6 +2,7 @@ library(tigris)
 library(tidyverse)
 library(sf)
 library(spData)
+library(patchwork)
 
 
 st <- states()  %>% 
@@ -112,7 +113,7 @@ cols1 <- setNames(
   c('#a6cee3','#1f78b4','#b2df8a',
            '#33a02c','#fb9a99','#e31a1c',
            '#fdbf6f','#ff7f00','#cab2d6',
-           '#6a3d9a','#ffff99','#b15928'),
+           '#6a3d9a','#C07F00','#b15928'),
  c('Flora Neomexicana', 'Jepson Manual 2nd', 'Manual of Montana Vascular Plants 2nd', 
           'Flora of the Pacific Northwest', 'A Utah Flora 3rd', 'Vascular Plants of Wyoming', 
           'Intermountain Flora', 'A Colorado Flora 2nd', 'Flora of Oregon',
@@ -130,7 +131,6 @@ cols3 <- setNames(
 )
 
 f_cols <- c(cols1, cols2, cols3)
-
 rm(cols1, cols2, cols3)
 
 ################################################################################
@@ -180,23 +180,26 @@ west <- ggplot() +
 
 rm(reg1, reg2, reg3, ad_sub)
 
+fd <- bind_rows(admin_floras, regional_floras) %>% 
+  mutate(flora = str_pad(flora, str_length(.$flora) + 7, "right"))
+
+
 leg <- ggpubr::get_legend(
   ggplot() + 
-  geom_sf(data = regional_floras, aes(fill = flora)) + 
   geom_sf(data = admin_floras, aes(fill = flora)) + 
+  geom_sf(data = regional_floras, aes(fill = flora)) + 
   scale_fill_manual('Flora', values = f_cols) +
-  theme(legend.title.align = 0.5) + 
+  theme(legend.title.align = 0.5, 
+        legend.spacing.x = unit(0.8, 'cm'),
+        legend.spacing.y = unit(0.4, 'cm')) + 
   guides(fill=guide_legend(ncol=3))
 )
-
-library(patchwork)
-
-cowplot::plot_grid(akp, west, il, labels = "Floras by region", nrow = 1, 
-                   rel_widths = c(1, 0.7, 0.4))
 
 
 (il | akp | west) /
     leg
+ggsave('../results/FlorasByRegion.png', device = 'png', dpi = 150, units = "px",
+       width = 1920, height = 1080)
 
 # rm(il, akp, west, leg)
 ################################################################################

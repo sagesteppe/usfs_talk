@@ -2,7 +2,9 @@
 title: "flora status table"
 author: "steppe"
 date: "2023-05-02"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -25,14 +27,14 @@ admin_floras <- data.frame(
     'Vascular Flora of Illinois 4th', 'Flora of Oregon', 'Arizona Flora 2nd', 'Flora of Alaska'
   ),
   authors = c(
-    'Baldwin, Goldman, Keil, Patterson, Patterson, Wilken', 'Ackerfield', 'Allred', 
+    'Baldwin, Goldman, Keil, Patterson, Wilken', 'Ackerfield', 'Allred', 
     'Lesica', 'Dorn', 'Welsh Atwood, Higgins, Goodrich', 
     'Mohlenbrock',  'Meyers, Jaster, Mitchell, Hardison, Harvey', 'Kearney, Peebles', 'Anderson, Welsh'
   ),
   status = c(
-    'Current - Online', 'Current', 'Current', 
+    'Current/Online', 'Current', 'Current', 
     'Current', 'Aging', 'Aging', 
-    'Current', 'Current - Not complete', 'Aged - Not complete', 'Aged'
+    'Current', 'Current/not complete', 'Aged/not complete', 'Aged'
   )
 ) 
 
@@ -62,7 +64,7 @@ cols1 <- setNames(
   c('#a6cee3','#1f78b4','#b2df8a',
            '#33a02c','#fb9a99','#e31a1c',
            '#fdbf6f','#ff7f00','#cab2d6',
-           '#6a3d9a','#ffff99','#b15928'),
+           '#6a3d9a','#C07F00','#b15928'),
  c('Flora Neomexicana', 'Jepson Manual 2nd', 'Manual of Montana Vascular Plants 2nd', 
           'Flora of the Pacific Northwest', 'A Utah Flora 3rd', 'Vascular Plants of Wyoming', 
           'Intermountain Flora', 'A Colorado Flora 2nd', 'Flora of Oregon',
@@ -84,26 +86,45 @@ f_cols <- c(cols1, cols2, cols3)
 rm(cols1, cols2, cols3, admin_floras, regional_floras)
 ```
 
-```{r}
+```{r prepare colors for condition of flora}
+# RColorBrewer::display.brewer.pal(6, "RdYlGn")
+# RColorBrewer::brewer.pal(6, "RdYlGn")
 
 stat_col <- floras %>% 
   mutate(Color = case_when(
-    status == 'Current - Online' ~ 'darkgreen', 
-    status ==  'Current' ~ 'green', 
-    status %in% c('Aged', 'Aged - Not complete') ~ 'firebrick',
-    status == 'Aged - Current' ~ 'darkorange', 
-    .default =  'orange'
+    status == 'Current/Online' ~ '#1A9641', 
+    status ==  'Current' ~ '#91CF60', 
+    status == 'Aged' ~ '#D7191C',
+    status %in% c('Aged-Current', 'Current/not complete') ~ '#D9EF8B', 
+    .default =  '#FDAE61'
   )) %>% 
   pull(Color)
 
-f_cols <- f_cols[order(names(f_cols), floras$flora)]
+```
 
-floras %>% 
-  kbl(align = 'c', col.names = c('Flora', 'Authors', 'Status')) %>% 
+\newpage 
+
+```{r}
+
+floras %>%
+  mutate(across(.cols = everything(), ~ str_pad(.x, 10, "both"))) %>% 
+  kbl(align = 'c', col.names = c('Flora', 'Author(s)', 'Status')) %>% 
   kable_paper(full_width = F) %>% 
+  landscape(margin = c('1cm')) %>% 
   
   column_spec(1, background = f_cols, color = 'white') %>% 
-  column_spec(3, background = stat_col, color = 'white')
+  column_spec(3, background = stat_col, color = 'white') #%>% 
+ # save_kable("test.pdf")
 
 ```
 
+
+
+
+### Now repeat the process for herbarium constia
+
+
+
+
+
+### now repreat the process for websites
