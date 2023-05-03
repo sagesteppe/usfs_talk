@@ -10,7 +10,7 @@ st <- states()  %>%
 
 xy <- data.frame(
   x = c(-100.72, -100.67, -124.12, -125.31),
-  y = c(50.00, 31.43, 31.26, 50.00)
+  y = c(50.00, 30, 30, 50.00)
 ) %>%
   st_as_sf(coords = c('x', 'y'), crs = 4269) %>% 
   st_union() %>% 
@@ -34,7 +34,7 @@ st_west <- st_crop(st, xy) %>%
   bind_rows(., ak) %>% 
   st_transform(4326)
 
-rm(xy, ak, il, st)
+rm(xy, ak, il)
 
 admin_floras <- data.frame(
   states = c(
@@ -86,7 +86,6 @@ regional_floras <- data.frame(
   ),
   region_code = c('IMF', 'FPNW', 'FGPR', 'Uintah', 'FFCR', 'Steens', 'CHI')
 )
-
 
 p <- '../data/raw/flora_regions/'
 fr <- paste0(p, 
@@ -164,6 +163,23 @@ il <- ggplot() +
 #########                    WESTERN PLOTS                              ########
 ################################################################################
 
+
+bbox <- bind_rows(
+  filter(regional_floras, flora %in% 
+           c('Flora of the Pacific Northwest','Flora of the Great Plains')), 
+  filter(admin_floras, flora %in% 
+           c('Jepson Manual 2nd', 'Flora Neomexicana','Arizona Flora 2nd'))
+) %>% 
+  st_union() %>% 
+  st_bbox() 
+
+st1 <- st_transform(st, 4326) %>% 
+  st_crop(., bbox) %>% 
+  filter(!NAME %in% c('Arizona', 'New Mexico')) %>% 
+  
+  bind_rows(., filter(st, NAME %in% c('Arizona', 'New Mexico')) %>% 
+              st_transform(4326))
+  
 reg1 <- filter(regional_floras, regions == 'Great Plains')
 reg2 <- filter(regional_floras, regions %in% c('Great Basin', 'Pacific Northwest'))
 reg3 <- filter(regional_floras, regions %in% c('Steens Mountain', 'Four Corners', 'Uinta'))
@@ -174,6 +190,7 @@ west <- ggplot() +
   geom_sf(data = ad_sub, aes(fill = flora)) +
   geom_sf(data = reg2, aes(fill = flora)) + 
   geom_sf(data = reg3, aes(fill = flora)) + 
+  geom_sf(data = st1, fill = NA) + 
   scale_fill_manual(values = f_cols) +
   theme_void() +
   theme(legend.position = 'none')
@@ -182,7 +199,6 @@ rm(reg1, reg2, reg3, ad_sub)
 
 fd <- bind_rows(admin_floras, regional_floras) %>% 
   mutate(flora = str_pad(flora, str_length(.$flora) + 7, "right"))
-
 
 leg <- ggpubr::get_legend(
   ggplot() + 
@@ -201,26 +217,4 @@ leg <- ggpubr::get_legend(
 ggsave('../results/FlorasByRegion.png', device = 'png', dpi = 150, units = "px",
        width = 1920, height = 1080)
 
-# rm(il, akp, west, leg)
-################################################################################
-#######                        FLORA STATUS TABLE                       ########      
-################################################################################
-
-af <- admin_floras %>% 
-  select(flora, authors, status) %>% 
-  st_drop_geometry()
-
-rf <- regional_floras %>% 
-  select(flora, authors, status) %>% 
-  st_drop_geometry()
-
-f <- bind_rows(af, rf)
-                   
-mtcars[1:8, 1:8] %>%
-  kbl() %>%
-  kable_paper(full_width = F) %>%
-  column_spec(2, color = spec_color(mtcars$mpg[1:8]),
-              link = "https://haozhu233.github.io/kableExtra/") %>%
-  column_spec(6, color = "white",
-              background = spec_color(mtcars$drat[1:8], end = 0.7),
-              popover = paste("am:", mtcars$am[1:8]))
+rm(il, akp, west, leg)

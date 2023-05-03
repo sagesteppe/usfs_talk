@@ -121,7 +121,7 @@ floras %>%
 
 
 
-### Now repeat the process for herbarium constia
+### Now repeat the process for herbarium consortia
 
 
 
