@@ -211,9 +211,16 @@ leg <- ggpubr::get_legend(
   guides(fill=guide_legend(ncol=3))
 )
 
-
-(il | akp | west) /
+pw <- (il | akp | west) /
     leg
+
+pw + plot_annotation(
+  title = 'Floras',
+  subtitle = "", 
+  theme = theme(
+    plot.title = element_text(size = 32, family = "sans serif", hjust = 0.5),
+    plot.subtitle = element_text(size = 22))
+) 
 ggsave('../results/FlorasByRegion.png', device = 'png', dpi = 150, units = "px",
        width = 1920, height = 1080)
 

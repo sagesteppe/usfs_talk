@@ -1,10 +1,8 @@
 ---
 title: "flora status table"
-author: "steppe"
-date: "2023-05-02"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -102,7 +100,6 @@ stat_col <- floras %>%
 
 ```
 
-\newpage 
 
 ```{r}
 
@@ -113,18 +110,6 @@ floras %>%
   landscape(margin = c('1cm')) %>% 
   
   column_spec(1, background = f_cols, color = 'white') %>% 
-  column_spec(3, background = stat_col, color = 'white') #%>% 
- # save_kable("test.pdf")
+  column_spec(3, background = stat_col, color = 'white')
 
 ```
-
-
-
-
-### Now repeat the process for herbarium consortia
-
-
-
-
-
-### now repreat the process for websites
