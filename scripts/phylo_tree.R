@@ -1,0 +1,137 @@
+library(ggtree)
+library(rotl)
+library(tidyverse)
+
+setwd('~/Documents/usfs_talk/scripts')
+
+fam <- c(
+  'Adoxaceae', 'Amaryllidaceae', 'Alismataceae', 'Apiaceae', 'Apocynaceae', 'Asparagaceae', 'Asteraceae',
+  'Amaranthaceae', 'Berberidiaceae', 'Brassicaceae', 'Boraginaceae', 'Cactaceae', 
+  'Campanulaceae', 'Caprifoliaceae', 'Caryophyllaceae', 'Chenopodiaceae', 
+  'Cleomaceae', 'Crassulaceae', 'Convolvulaceae', 'Comandraceae', 'Cornaceae', 'Cyperaceae', 
+  'Ericaceae', 'Euphorbiaceae', 'Fabaceae', 'Gentianaceae', 'Geraniaceae',
+  'Grossulariaceae', 'Hydrangaceae', 'Hydrophyllaceae', 'Iridaceae', 'Juncaceae', 'Krameriaceae',
+  'Lamiaceae', 'Liliaceae', 'Linaceae', 'Loasaceae', 'Lythraceae', 'Malvaceae', 'Melanthiaceae',
+  'Namaceae', 'Nyctaginaceae', 'Onagraceae', 'Orobanchaceae', 'Papaveraceae',
+  'Plantaginaceae', 'Phrymaceae', 'Poaceae', 'Polemoniaceae', 'Polygalaceae', 'Polygonaceae',
+  'Portulaceae', 'Primulaceae',  'Ranunculaceae',  'Rhamnaceae',  'Rosaceae',  
+  'Rubiaceae', 'Salicaceae', 'Santalaceae', 'Saxifragaceae', 'Scrophulariaceae', 'Viscaceae',
+  'Solanaceae', 'Zygophyllaceae')
+
+resolved_names <- tnrs_match_names(fam, context = "Land plants")
+resolved_names$in_tree <- is_in_tree(resolved_names$ott_id) # 
+resolved_names <- resolved_names %>% filter(in_tree == "TRUE")
+
+tree <- tol_induced_subtree(ott_ids = resolved_names$ott_id)
+
+tree[["tip.label"]] <- sub("_.*", "",tree[["tip.label"]])
+tip_label_order <- as.data.frame(sub("_.*", "",tree[["tip.label"]])) 
+
+ggtree(tree, branch.length='none', layout='circular') +
+  geom_tiplab(size = 3) + 
+  geom_text(aes(label=node)) 
+
+
+node_dist <- data.frame(
+  node = c(
+    c(85, 27:28), # asterales
+    c(51), # Alismatales
+    c(86:87, 29:31), # apiales
+    c(9), # brassicales
+    c(92:94, 38:41), # caryophyllales
+    c(90:91, 35:37), # cornales
+    c(88:89, 32:34), # ericales
+    c(5:6, 62), # Fabales
+    c(82:83, 24:26), # gentianales
+    c(76:79, 17:21), # lamiales
+    c(101, 49:50), # liliales
+    c(59, 1:2), # malpighiales
+    c(10), # malvales
+    c(11:13, 66:67), # Myrtales
+    c(99:100, 46:48), # poaceae
+    c(95:96, 43:45), # Ranunculales
+    c(61, 3:4), # Rosales
+    c(42), # santales
+    c(68:69, 14:16), # saxifragales
+    c(81, 22:23), # solanales
+    c(63, 7:8) # zygophyllales
+  ),
+  order = c(
+    rep("Asterales", each = length(c(85, 27:28))),
+    rep("Alismatales", each = length(c(51))),
+    rep('Apiales', each = length(c(86:87, 29:31))), 
+    rep('Brassicales', each = length(c(9))), 
+    rep('Caryophyllales', each = length(c(92:94, 38:41))), 
+    rep('Cornales', each = length(c(90:91, 35:37))), 
+    rep('Ericales', each = length(c(88:89, 32:34))), 
+    rep('Fabales', each = length(c(5:6, 62))), 
+    rep('Gentianales', each = length(c(82:83, 24:26))), 
+    rep('Lamiales', each = length(c(76:79, 17:21))), 
+    rep('Liliales', each = length(c(101, 49:50))), 
+    rep('Malpighiales', each = length(c(59, 1:2))), 
+    rep('Malvales', each = length(c(10))),
+    rep('Myrtales', each = length(c(11:13, 66:67))), 
+    rep('Poales', each = length(c(99:100, 46:48))), 
+    rep('Ranunculales', each = length(c(95:96, 43:45))),
+    rep('Rosales', each = length(c(61, 3:4))),
+    rep('Santales', each = length(c(42))), 
+    rep('Saxifragales', each = length(c(68:69, 14:16))), 
+    rep('Solanales', each = length(c(81, 22:23))), 
+    rep('Zygophyllales', each = length(c(63, 7:8)))
+  )
+)
+upper <- data.frame(
+  node = c(
+    c(52:54),
+    c(97:98),
+    55,
+    56, 
+    c(57, 58, 60),
+    c(64, 65, 66),
+    c(70:72), 
+    c(73:74),
+    c(75, 80),
+    c(84)),
+  order = c(
+    rep('Early', each = length(c(52:54))),
+    rep('Monocots', each = length(c(97:98))),
+    rep('Superrosids', each = length(c(55))),
+    rep('Rosids', each = length(c(56))),
+    rep('Fabids', each = length(c(57,58,60))),
+    rep('Malvids', each = length(c(64, 56, 66))),
+    rep('Superasterids', each = length(c(70:72))),
+    rep('Asterids', each = length(c(73:74))),
+    rep('Lamiids', each = length(c(75, 80))), # lamiids need one more
+    rep('Campanulids', each = length(c(84)))
+  )
+)
+
+node_dist <- bind_rows(node_dist, upper)
+APalG <- bind_rows(
+  read.csv('../data/raw/APG-hexCodes.csv'),
+  data.frame(
+    order = c('Poales', 'Zygophyllales', 'Santales', 'Early'), 
+    color = c('#41b668', '#f9a8d8', '#feecdb', '#b6d0e2'))
+)
+
+
+
+node_dist <- left_join(node_dist, APalG, by = 'order')
+
+usfs_named <- ggtree(tree, branch.length='none', layout = 'ellipse') +
+  geom_tiplab(size = 3, color = 'black') +
+  coord_cartesian(clip = 'off') + 
+  theme_tree2(plot.margin=margin(6, 120, 6, 6), 
+              axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              bgcolor = "transparent") +
+  scale_x_discrete(labels = NULL, breaks = NULL) + labs(x = "")
+
+
+usfs_named %<+% 
+  node_dist + 
+  aes(color=I(color))
+
+ggsave('../results/Tree.png', device = 'png', dpi = 150, units = "px",
+       width = 1920, height = 1080)
