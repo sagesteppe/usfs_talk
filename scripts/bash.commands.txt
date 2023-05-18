@@ -1,0 +1,4 @@
+pdftk Asteraceae_Utah_Flora.pdf Fabaceae_Utah_Flora.pdf Rosaceae_Utah_Flora.pdf Poaceae_Utah_Flora.pdf cat output ../keys_training/Utah_Flora.pdf
+pdftk Asteraceae_jepson.pdf Fabaceae_jepson.pdf Rosaceae_jepson.pdf Poaceae_jepson.pdf cat output ../keys_training/jepson.pdf
+pdftk Asteraceae_FPNW.pdf Fabaceae_FPNW.pdf Rosaceae_FPNW.pdf Poaceae_FPNW.pdf cat output ../keys_training/FPNW.pdf
+pdftk fnm-iiia-condensed-2020.pdf cat 58-71 144-156 257-262 360-361 output ../keys_training/FloraNeoMexicana.pdf
